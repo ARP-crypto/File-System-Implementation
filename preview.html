@@ -1,0 +1,574 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Interactive File System visualizer for Operating Systems mini-projects." />
+  <title>File System Lab</title>
+  <style>
+:root {
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color-scheme: light dark;
+  --bg: light-dark(#f5f4ee, #11120f);
+  --surface: light-dark(#ffffff, #1a1c17);
+  --surface-2: light-dark(#f0f1eb, #22251f);
+  --text: light-dark(#181b16, #f4f5ee);
+  --muted: light-dark(#687064, #a6ac9f);
+  --border: light-dark(#dfe2d7, #34392f);
+  --accent: light-dark(#1d5f45, #8be4b5);
+  --accent-2: light-dark(#dfeee6, #1f4232);
+  --danger: light-dark(#a84236, #ff9f92);
+  --danger-bg: light-dark(#f9e5e2, #4b2926);
+  --shadow: 0 18px 50px rgba(16, 25, 18, 0.08);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--text); }
+button, input, textarea, select { font: inherit; }
+button { cursor: pointer; }
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  padding: 18px 28px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+.brand { display: flex; align-items: center; gap: 13px; }
+.brand-mark {
+  width: 40px; height: 40px; border-radius: 12px;
+  display: grid; place-items: center;
+  background: var(--accent); color: var(--bg); font-weight: 900; letter-spacing: -0.06em;
+}
+.brand h1 { margin: 0; font-size: 16px; letter-spacing: -0.02em; }
+.brand p { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+.top-actions { display: flex; align-items: center; gap: 12px; }
+.ghost-btn {
+  border: 1px solid var(--border); background: transparent; color: var(--text);
+  padding: 9px 13px; border-radius: 10px;
+}
+.status-dot { color: var(--muted); font-size: 12px; display: flex; align-items: center; gap: 7px; }
+.status-dot span { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+
+.page-shell { max-width: 1440px; margin: 0 auto; padding: 28px; }
+.panel { background: var(--surface); border: 1px solid var(--border); box-shadow: var(--shadow); border-radius: 20px; }
+.hero {
+  padding: 34px; display: flex; justify-content: space-between; align-items: center; gap: 24px;
+  background: linear-gradient(135deg, var(--surface), var(--accent-2));
+}
+.eyebrow { font-size: 10px; font-weight: 800; letter-spacing: 0.16em; color: var(--muted); }
+.hero h2 { max-width: 780px; margin: 8px 0 10px; font-size: clamp(31px, 4vw, 52px); line-height: 0.98; letter-spacing: -0.055em; }
+.hero h2 em { color: var(--accent); font-style: normal; }
+.hero p { margin: 0; max-width: 700px; color: var(--muted); line-height: 1.6; }
+.hero-chip { display: flex; align-items: center; gap: 11px; white-space: nowrap; }
+.chip-icon { width: 42px; height: 42px; display: grid; place-items: center; background: var(--surface); border: 1px solid var(--border); border-radius: 12px; font-weight: 800; }
+.hero-chip strong, .hero-chip small { display: block; }
+.hero-chip strong { font-size: 16px; }
+.hero-chip small { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+.stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-top: 14px; }
+.stat-card { padding: 20px 20px 18px; }
+.stat-card span { color: var(--muted); font-size: 11px; }
+.stat-card strong { display: block; margin: 4px 0; font-size: 30px; letter-spacing: -0.04em; }
+.stat-card small { color: var(--muted); font-size: 11px; }
+
+.workspace { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(330px, 0.95fr); gap: 14px; margin-top: 14px; }
+.left-column, .right-column { display: grid; gap: 14px; align-content: start; }
+.operation-card, .disk-card, .directory-card, .concept-card { padding: 22px; }
+.section-head { display: flex; justify-content: space-between; gap: 14px; align-items: flex-start; }
+h3 { margin: 4px 0 0; font-size: 18px; letter-spacing: -0.03em; }
+.kbd { color: var(--muted); border: 1px solid var(--border); background: var(--surface-2); padding: 6px 9px; border-radius: 8px; font-size: 10px; }
+
+.form-grid { display: grid; grid-template-columns: 1fr 0.42fr; gap: 14px; margin-top: 20px; }
+label { display: grid; gap: 7px; color: var(--muted); font-size: 11px; font-weight: 700; }
+label.wide { grid-column: 1 / -1; }
+input, textarea, select {
+  width: 100%; border: 1px solid var(--border); color: var(--text); background: var(--surface-2);
+  border-radius: 11px; padding: 12px 13px; outline: none;
+}
+input:focus, textarea:focus, select:focus { border-color: var(--accent); }
+textarea { resize: vertical; min-height: 96px; }
+.button-row { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 15px; }
+.primary-btn, .secondary-btn, .danger-btn {
+  border-radius: 10px; padding: 10px 15px; border: 1px solid transparent; font-weight: 800; font-size: 12px;
+}
+.primary-btn { background: var(--accent); color: var(--bg); }
+.secondary-btn { background: var(--surface-2); border-color: var(--border); color: var(--text); }
+.danger-btn { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.message { margin-top: 14px; padding: 11px 13px; border-radius: 10px; font-size: 12px; border: 1px solid var(--border); background: var(--surface-2); color: var(--muted); }
+.message.success { color: var(--accent); }
+.message.error { color: var(--danger); }
+
+.legend { display: flex; flex-wrap: wrap; gap: 10px; color: var(--muted); font-size: 10px; }
+.legend span { display: flex; align-items: center; gap: 4px; }
+.legend i { width: 8px; height: 8px; border-radius: 3px; display: inline-block; background: var(--border); }
+.legend .free-dot { background: var(--surface-2); border: 1px solid var(--border); }
+.legend .used-dot { background: var(--accent); }
+.legend .index-dot { background: #c79b2c; }
+.disk-grid { display: grid; grid-template-columns: repeat(10, minmax(0, 1fr)); gap: 7px; margin-top: 18px; }
+.block {
+  aspect-ratio: 1.3 / 1; border: 1px solid var(--border); border-radius: 7px; background: var(--surface-2);
+  position: relative; display: grid; place-items: center; font-size: 9px; color: var(--muted); transition: transform .15s ease, box-shadow .15s ease;
+}
+.block:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(0,0,0,.09); }
+.block.used { background: var(--accent-2); border-color: var(--accent); color: var(--text); }
+.block.index { background: #5a471b; border-color: #c79b2c; color: #fff6cf; }
+.block.selected { outline: 2px solid var(--text); outline-offset: 1px; }
+.block small { position: absolute; left: 4px; bottom: 2px; font-size: 7px; overflow: hidden; white-space: nowrap; max-width: calc(100% - 8px); opacity: .75; }
+.disk-footer { display: flex; justify-content: space-between; gap: 12px; color: var(--muted); font-size: 10px; margin-top: 12px; }
+
+.count-pill { background: var(--accent-2); color: var(--accent); padding: 6px 8px; border-radius: 99px; font-size: 10px; font-weight: 800; }
+.table-wrap { overflow-x: auto; margin-top: 14px; }
+table { width: 100%; border-collapse: collapse; font-size: 11px; }
+th, td { padding: 11px 8px; border-bottom: 1px solid var(--border); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-size: 9px; letter-spacing: .08em; text-transform: uppercase; }
+td { color: var(--text); }
+tbody tr { cursor: pointer; }
+tbody tr:hover { background: var(--surface-2); }
+.empty-state { text-align: center; color: var(--muted); padding: 26px 10px; }
+.directory-note { color: var(--muted); font-size: 10px; margin-top: 11px; }
+
+.concept-card p { margin: 12px 0 16px; color: var(--muted); line-height: 1.55; font-size: 12px; }
+.mini-flow { display: flex; gap: 7px; flex-wrap: wrap; }
+.mini-flow span { padding: 7px 8px; border-radius: 7px; background: var(--surface-2); border: 1px solid var(--border); font-size: 10px; }
+.footer { max-width: 1440px; margin: 0 auto; padding: 0 28px 30px; color: var(--muted); font-size: 10px; }
+
+@media (max-width: 980px) {
+  .workspace { grid-template-columns: 1fr; }
+  .stats-grid { grid-template-columns: repeat(2, 1fr); }
+  .hero { align-items: flex-start; }
+}
+@media (max-width: 640px) {
+  .topbar { padding: 16px; }
+  .top-actions .status-dot { display: none; }
+  .page-shell { padding: 16px; }
+  .hero { padding: 23px; flex-direction: column; }
+  .stats-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+  .form-grid { grid-template-columns: 1fr; }
+  label.wide { grid-column: auto; }
+  .operation-card, .disk-card, .directory-card, .concept-card { padding: 17px; }
+  .disk-grid { gap: 4px; }
+  .block { font-size: 8px; }
+}
+
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-mark">FS</div>
+      <div>
+        <h1>File System Lab</h1>
+        <p>Operating Systems • Interactive Simulator</p>
+      </div>
+    </div>
+    <div class="top-actions">
+      <button id="resetBtn" class="ghost-btn">Reset Disk</button>
+      <span class="status-dot"><span></span> Local simulation</span>
+    </div>
+  </header>
+
+  <main class="page-shell">
+    <section class="hero panel">
+      <div>
+        <span class="eyebrow">21CSC202J • MINI PROJECT</span>
+        <h2>Understand a file system by <em>using</em> one.</h2>
+        <p>Create files, write data, read contents, delete files, and see exactly how a virtual disk is allocated in real time.</p>
+      </div>
+      <div class="hero-chip"><span class="chip-icon">◫</span><div><strong>100 blocks</strong><small>virtual disk</small></div></div>
+    </section>
+
+    <section class="stats-grid">
+      <article class="stat-card panel"><span>Files</span><strong id="fileCount">0</strong><small>directory entries</small></article>
+      <article class="stat-card panel"><span>Used Blocks</span><strong id="usedBlocks">0</strong><small>currently allocated</small></article>
+      <article class="stat-card panel"><span>Free Blocks</span><strong id="freeBlocks">100</strong><small>available for allocation</small></article>
+      <article class="stat-card panel"><span>Allocation</span><strong id="currentMethod">Contiguous</strong><small>selected method</small></article>
+    </section>
+
+    <section class="workspace">
+      <div class="left-column">
+        <article class="panel operation-card">
+          <div class="section-head">
+            <div><span class="eyebrow">FILE OPERATIONS</span><h3>Manage a file</h3></div>
+            <span class="kbd">Create → Write → Read → Delete</span>
+          </div>
+          <div class="form-grid">
+            <label>File name<input id="fileName" type="text" placeholder="e.g. notes.txt" maxlength="30" /></label>
+            <label>Size (blocks)<input id="fileSize" type="number" min="1" max="100" placeholder="e.g. 4" /></label>
+            <label class="wide">Allocation method
+              <select id="method">
+                <option value="Contiguous">Contiguous</option>
+                <option value="Linked">Linked</option>
+                <option value="Indexed">Indexed</option>
+              </select>
+            </label>
+            <label class="wide">File data<textarea id="fileData" rows="4" maxlength="500" placeholder="Write something here. Each block stores up to 50 characters in this simulation."></textarea></label>
+          </div>
+          <div class="button-row">
+            <button id="createBtn" class="primary-btn">Create file</button>
+            <button id="writeBtn" class="secondary-btn">Write</button>
+            <button id="readBtn" class="secondary-btn">Read</button>
+            <button id="deleteBtn" class="danger-btn">Delete</button>
+          </div>
+          <div id="message" class="message info">Ready. Create your first file.</div>
+        </article>
+
+        <article class="panel disk-card">
+          <div class="section-head">
+            <div><span class="eyebrow">VIRTUAL DISK</span><h3>Block allocation</h3></div>
+            <div class="legend"><span><i class="free-dot"></i>Free</span><span><i class="used-dot"></i>Used</span><span><i class="index-dot"></i>Index</span></div>
+          </div>
+          <div id="diskGrid" class="disk-grid" aria-label="Virtual disk blocks"></div>
+          <div class="disk-footer"><span id="diskHint">Click a used block to inspect it.</span><span id="diskUsage">0 / 100 blocks</span></div>
+        </article>
+      </div>
+
+      <aside class="right-column">
+        <article class="panel directory-card">
+          <div class="section-head">
+            <div><span class="eyebrow">DIRECTORY</span><h3>Files</h3></div>
+            <span id="directoryCount" class="count-pill">0 entries</span>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Name</th><th>Size</th><th>Method</th><th>Blocks</th></tr></thead>
+              <tbody id="directoryBody"><tr><td colspan="4" class="empty-state">No files yet.</td></tr></tbody>
+            </table>
+          </div>
+          <div class="directory-note">Double-click a row to highlight that file's blocks.</div>
+        </article>
+
+        <article class="panel concept-card">
+          <span class="eyebrow">OS CONCEPT</span>
+          <h3 id="methodTitle">Contiguous Allocation</h3>
+          <p id="methodText">The file occupies consecutive blocks. It is simple and fast, but external fragmentation can make large files harder to place.</p>
+          <div class="mini-flow" id="methodVisual"></div>
+        </article>
+      </aside>
+    </section>
+  </main>
+
+  <footer class="footer">Built as an educational File System Implementation • Local-only demo • No backend required</footer>
+
+  <script>
+const DISK_SIZE = 100;
+const BLOCK_CAPACITY = 50;
+
+const state = {
+  files: new Map(),
+  blocks: Array.from({ length: DISK_SIZE }, () => ({ owner: null, index: false, data: "", next: -1 })),
+  selectedBlock: null
+};
+
+const els = {
+  fileName: document.getElementById("fileName"),
+  fileSize: document.getElementById("fileSize"),
+  method: document.getElementById("method"),
+  fileData: document.getElementById("fileData"),
+  message: document.getElementById("message"),
+  directoryBody: document.getElementById("directoryBody"),
+  directoryCount: document.getElementById("directoryCount"),
+  diskGrid: document.getElementById("diskGrid"),
+  diskHint: document.getElementById("diskHint"),
+  diskUsage: document.getElementById("diskUsage"),
+  fileCount: document.getElementById("fileCount"),
+  usedBlocks: document.getElementById("usedBlocks"),
+  freeBlocks: document.getElementById("freeBlocks"),
+  currentMethod: document.getElementById("currentMethod"),
+  methodTitle: document.getElementById("methodTitle"),
+  methodText: document.getElementById("methodText"),
+  methodVisual: document.getElementById("methodVisual")
+};
+
+const methodInfo = {
+  Contiguous: {
+    title: "Contiguous Allocation",
+    text: "The file occupies consecutive blocks. It is simple and fast, but external fragmentation can make large files harder to place.",
+    visual: ["B10", "B11", "B12", "B13"]
+  },
+  Linked: {
+    title: "Linked Allocation",
+    text: "Blocks may be scattered across the disk and are connected using next-block pointers. File growth is flexible, but random access is slower.",
+    visual: ["B5 →", "B22 →", "B8 →", "NULL"]
+  },
+  Indexed: {
+    title: "Indexed Allocation",
+    text: "A separate index block stores references to the file's data blocks. This supports direct access while adding index-block overhead.",
+    visual: ["INDEX", "B7", "B19", "B31"]
+  }
+};
+
+function showMessage(text, type = "info") {
+  els.message.textContent = text;
+  els.message.className = `message ${type}`;
+}
+
+function normalizeName(name) {
+  return name.trim();
+}
+
+function availableBlocks(count, exclude = new Set()) {
+  const list = [];
+  for (let i = 0; i < DISK_SIZE && list.length < count; i++) {
+    if (!state.blocks[i].owner && !exclude.has(i)) list.push(i);
+  }
+  return list;
+}
+
+function contiguousBlocks(count) {
+  for (let start = 0; start <= DISK_SIZE - count; start++) {
+    let good = true;
+    for (let i = start; i < start + count; i++) {
+      if (state.blocks[i].owner) { good = false; break; }
+    }
+    if (good) return Array.from({ length: count }, (_, j) => start + j);
+  }
+  return null;
+}
+
+function allocateFile(name, size, method) {
+  if (method === "Contiguous") {
+    const blocks = contiguousBlocks(size);
+    if (!blocks) return null;
+    return { blocks, indexBlock: null };
+  }
+
+  if (method === "Linked") {
+    const blocks = availableBlocks(size);
+    if (blocks.length < size) return null;
+    return { blocks, indexBlock: null };
+  }
+
+  if (method === "Indexed") {
+    const idx = availableBlocks(1)[0];
+    if (idx === undefined) return null;
+    const blocks = availableBlocks(size, new Set([idx]));
+    if (blocks.length < size) return null;
+    return { blocks, indexBlock: idx };
+  }
+
+  return null;
+}
+
+function createFile() {
+  const name = normalizeName(els.fileName.value);
+  const size = Number(els.fileSize.value);
+  const method = els.method.value;
+
+  if (!name || !Number.isInteger(size) || size < 1 || size > DISK_SIZE) {
+    showMessage("Enter a valid file name and a size from 1 to 100 blocks.", "error");
+    return;
+  }
+  if (state.files.has(name)) {
+    showMessage("A file with that name already exists.", "error");
+    return;
+  }
+
+  const allocation = allocateFile(name, size, method);
+  if (!allocation) {
+    showMessage("Allocation failed. The selected method could not find enough suitable free space.", "error");
+    return;
+  }
+
+  const file = {
+    name,
+    size,
+    method,
+    blocks: allocation.blocks,
+    indexBlock: allocation.indexBlock,
+    data: ""
+  };
+
+  state.files.set(name, file);
+  file.blocks.forEach((blockId, pos) => {
+    state.blocks[blockId].owner = name;
+    state.blocks[blockId].next = file.blocks[pos + 1] ?? -1;
+    state.blocks[blockId].index = false;
+  });
+
+  if (file.indexBlock !== null) {
+    state.blocks[file.indexBlock].owner = name;
+    state.blocks[file.indexBlock].index = true;
+  }
+
+  updateUI();
+  highlightFile(name);
+  showMessage(`Created ${name} using ${method} allocation.`, "success");
+}
+
+function writeFile() {
+  const name = normalizeName(els.fileName.value);
+  const file = state.files.get(name);
+  if (!file) {
+    showMessage("File not found. Create the file first.", "error");
+    return;
+  }
+
+  const data = els.fileData.value;
+  const required = Math.max(1, Math.ceil(data.length / BLOCK_CAPACITY));
+  if (required > file.size) {
+    showMessage(`Write failed. ${name} has ${file.size} block(s), so it can store about ${file.size * BLOCK_CAPACITY} characters in this demo.`, "error");
+    return;
+  }
+
+  file.data = data;
+  file.blocks.forEach((blockId, i) => {
+    const start = i * BLOCK_CAPACITY;
+    state.blocks[blockId].data = data.slice(start, start + BLOCK_CAPACITY);
+  });
+  updateUI();
+  highlightFile(name);
+  showMessage(`Wrote data to ${name}.`, "success");
+}
+
+function readFile() {
+  const name = normalizeName(els.fileName.value);
+  const file = state.files.get(name);
+  if (!file) {
+    showMessage("File not found.", "error");
+    return;
+  }
+  els.fileData.value = file.data;
+  highlightFile(name);
+  showMessage(`Read operation successful for ${name}.`, "success");
+}
+
+function deleteFile() {
+  const name = normalizeName(els.fileName.value);
+  const file = state.files.get(name);
+  if (!file) {
+    showMessage("File not found.", "error");
+    return;
+  }
+
+  file.blocks.forEach(blockId => {
+    state.blocks[blockId] = { owner: null, index: false, data: "", next: -1 };
+  });
+  if (file.indexBlock !== null) {
+    state.blocks[file.indexBlock] = { owner: null, index: false, data: "", next: -1 };
+  }
+  state.files.delete(name);
+  els.fileData.value = "";
+  updateUI();
+  showMessage(`Deleted ${name} and released its blocks.`, "success");
+}
+
+function resetSystem() {
+  if (!state.files.size) {
+    showMessage("The disk is already empty.", "info");
+    return;
+  }
+  state.files.clear();
+  state.blocks = Array.from({ length: DISK_SIZE }, () => ({ owner: null, index: false, data: "", next: -1 }));
+  state.selectedBlock = null;
+  els.fileData.value = "";
+  updateUI();
+  showMessage("Disk reset. All files and allocations were cleared.", "success");
+}
+
+function blockLabel(blockId) {
+  const block = state.blocks[blockId];
+  if (!block.owner) return "FREE";
+  if (block.index) return "INDEX";
+  return block.owner.length > 8 ? block.owner.slice(0, 8) : block.owner;
+}
+
+function renderDisk() {
+  els.diskGrid.innerHTML = "";
+  state.blocks.forEach((block, i) => {
+    const cell = document.createElement("button");
+    cell.type = "button";
+    cell.className = "block";
+    if (block.owner) cell.classList.add("used");
+    if (block.index) cell.classList.add("index");
+    if (state.selectedBlock === i) cell.classList.add("selected");
+    cell.title = block.owner ? `${i}: ${block.index ? "Index block" : block.owner}` : `${i}: Free`;
+    cell.innerHTML = `<span>${i}</span>${block.owner ? `<small>${blockLabel(i)}</small>` : ""}`;
+    cell.addEventListener("click", () => inspectBlock(i));
+    els.diskGrid.appendChild(cell);
+  });
+}
+
+function inspectBlock(i) {
+  state.selectedBlock = i;
+  const block = state.blocks[i];
+  if (!block.owner) {
+    els.diskHint.textContent = `Block ${i} is free.`;
+  } else if (block.index) {
+    const file = state.files.get(block.owner);
+    els.diskHint.textContent = `Block ${i} is the index block for ${block.owner}. Data blocks: ${file.blocks.join(", ")}`;
+  } else {
+    const next = block.next === -1 ? "NULL" : `Block ${block.next}`;
+    els.diskHint.textContent = `Block ${i} belongs to ${block.owner}. Next block: ${next}.`;
+  }
+  renderDisk();
+}
+
+function renderDirectory() {
+  els.directoryBody.innerHTML = "";
+  if (!state.files.size) {
+    els.directoryBody.innerHTML = `<tr><td colspan="4" class="empty-state">No files yet.</td></tr>`;
+  } else {
+    state.files.forEach(file => {
+      const row = document.createElement("tr");
+      row.innerHTML = `<td><strong>${escapeHtml(file.name)}</strong></td><td>${file.size}</td><td>${file.method}</td><td>${file.indexBlock !== null ? `I:${file.indexBlock} → ` : ""}${file.blocks.join(", ")}</td>`;
+      row.addEventListener("dblclick", () => {
+        els.fileName.value = file.name;
+        els.fileSize.value = file.size;
+        els.method.value = file.method;
+        els.fileData.value = file.data;
+        highlightFile(file.name);
+      });
+      els.directoryBody.appendChild(row);
+    });
+  }
+  const count = state.files.size;
+  els.directoryCount.textContent = `${count} ${count === 1 ? "entry" : "entries"}`;
+}
+
+function highlightFile(name) {
+  const file = state.files.get(name);
+  if (!file) return;
+  state.selectedBlock = file.blocks[0] ?? file.indexBlock;
+  renderDisk();
+  els.diskHint.textContent = `${name}: ${file.method} allocation • ${file.blocks.length} data block(s)${file.indexBlock !== null ? ` • index block ${file.indexBlock}` : ""}`;
+}
+
+function renderMethodInfo() {
+  const method = els.method.value;
+  const info = methodInfo[method];
+  els.currentMethod.textContent = method;
+  els.methodTitle.textContent = info.title;
+  els.methodText.textContent = info.text;
+  els.methodVisual.innerHTML = info.visual.map(item => `<span>${item}</span>`).join("");
+}
+
+function updateUI() {
+  const used = state.blocks.filter(b => b.owner).length;
+  els.fileCount.textContent = state.files.size;
+  els.usedBlocks.textContent = used;
+  els.freeBlocks.textContent = DISK_SIZE - used;
+  els.diskUsage.textContent = `${used} / ${DISK_SIZE} blocks`;
+  renderDirectory();
+  renderDisk();
+  renderMethodInfo();
+}
+
+function escapeHtml(value) {
+  return value.replace(/[&<>\"]/g, ch => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '\"': "&quot;"}[ch]));
+}
+
+document.getElementById("createBtn").addEventListener("click", createFile);
+document.getElementById("writeBtn").addEventListener("click", writeFile);
+document.getElementById("readBtn").addEventListener("click", readFile);
+document.getElementById("deleteBtn").addEventListener("click", deleteFile);
+document.getElementById("resetBtn").addEventListener("click", resetSystem);
+els.method.addEventListener("change", renderMethodInfo);
+
+updateUI();
+
+  </script>
+</body>
+</html>
