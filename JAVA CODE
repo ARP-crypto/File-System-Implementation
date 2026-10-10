@@ -1,0 +1,204 @@
+import java.util.*;
+
+class FileData {
+    String name;
+    String data;
+    int size;
+
+    FileData(String name, int size) {
+        this.name = name;
+        this.size = size;
+        this.data = "";
+    }
+}
+
+public class Main {
+
+    static Scanner sc = new Scanner(System.in);
+    static ArrayList<FileData> files = new ArrayList<>();
+
+    // CREATE FILE
+    static void createFile() {
+        System.out.print("Enter file name: ");
+        String name = sc.next();
+
+        // Check duplicate file
+        for (FileData f : files) {
+            if (f.name.equals(name)) {
+                System.out.println("File already exists!");
+                return;
+            }
+        }
+
+        System.out.print("Enter file size: ");
+        int size = sc.nextInt();
+
+        files.add(new FileData(name, size));
+
+        System.out.println("File created successfully.");
+    }
+
+    // WRITE FILE
+    static void writeFile() {
+        System.out.print("Enter file name: ");
+        String name = sc.next();
+
+        for (FileData f : files) {
+            if (f.name.equals(name)) {
+
+                sc.nextLine();
+                System.out.print("Enter file data: ");
+                f.data = sc.nextLine();
+
+                System.out.println("Data written successfully.");
+                return;
+            }
+        }
+
+        System.out.println("File not found.");
+    }
+
+    // READ FILE
+    static void readFile() {
+        System.out.print("Enter file name: ");
+        String name = sc.next();
+
+        for (FileData f : files) {
+            if (f.name.equals(name)) {
+
+                System.out.println("File Name: " + f.name);
+                System.out.println("File Size: " + f.size);
+                System.out.println("File Data: " + f.data);
+
+                return;
+            }
+        }
+
+        System.out.println("File not found.");
+    }
+
+    // DELETE FILE
+    static void deleteFile() {
+        System.out.print("Enter file name: ");
+        String name = sc.next();
+
+        for (int i = 0; i < files.size(); i++) {
+
+            if (files.get(i).name.equals(name)) {
+
+                files.remove(i);
+
+                System.out.println("File deleted successfully.");
+                return;
+            }
+        }
+
+        System.out.println("File not found.");
+    }
+
+    // DISPLAY DIRECTORY
+    static void displayFiles() {
+
+        if (files.size() == 0) {
+            System.out.println("Directory is empty.");
+            return;
+        }
+
+        System.out.println("\n----- DIRECTORY -----");
+        System.out.println("Name\tSize\tData");
+
+        for (FileData f : files) {
+            System.out.println(
+                f.name + "\t" +
+                f.size + "\t" +
+                f.data
+            );
+        }
+    }
+
+    // SIMPLE ALLOCATION DISPLAY
+    static void allocation() {
+
+        if (files.size() == 0) {
+            System.out.println("No files available.");
+            return;
+        }
+
+        int block = 0;
+
+        System.out.println("\n----- FILE ALLOCATION -----");
+
+        for (FileData f : files) {
+
+            System.out.print(
+                f.name + " -> Blocks: "
+            );
+
+            for (int i = 0; i < f.size; i++) {
+                System.out.print(block + " ");
+                block++;
+            }
+
+            System.out.println();
+        }
+    }
+
+    public static void main(String[] args) {
+
+        int choice;
+
+        do {
+
+            System.out.println("\n==============================");
+            System.out.println("     SIMPLE FILE SYSTEM");
+            System.out.println("==============================");
+            System.out.println("1. Create File");
+            System.out.println("2. Write File");
+            System.out.println("3. Read File");
+            System.out.println("4. Delete File");
+            System.out.println("5. Display Directory");
+            System.out.println("6. Show File Allocation");
+            System.out.println("7. Exit");
+
+            System.out.print("Enter your choice: ");
+            choice = sc.nextInt();
+
+            switch (choice) {
+
+                case 1:
+                    createFile();
+                    break;
+
+                case 2:
+                    writeFile();
+                    break;
+
+                case 3:
+                    readFile();
+                    break;
+
+                case 4:
+                    deleteFile();
+                    break;
+
+                case 5:
+                    displayFiles();
+                    break;
+
+                case 6:
+                    allocation();
+                    break;
+
+                case 7:
+                    System.out.println("Program terminated.");
+                    break;
+
+                default:
+                    System.out.println("Invalid choice.");
+            }
+
+        } while (choice != 7);
+
+        sc.close();
+    }
+}
